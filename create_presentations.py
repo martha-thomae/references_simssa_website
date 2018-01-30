@@ -36,27 +36,37 @@ Example: python create_presentations.py ./presentations.html ./presentations.bib
         # and so the distance among strings is calculated and only the subset
         # of closest strings among candidates_by_year is kept
         similarities_by_author = [Levenshtein.ratio(author_h, candidate['author'].split(' and')[0]) for candidate in candidates_by_year]
-        # The authors in the bib file are separated by an 'and'
+        # The authors in a bib entry are separated by an 'and'
         # So the first author is given by: candidate['author'].split(' and')[0]
-        print(author_h + ", " + year_h + ", " + title_h[:10]) ##        
+        
+        # For DEBUG purposes: 
+        # See the author, year, and beginning of the title extracted from each html reference 
+        print(author_h + ", " + year_h + ", " + title_h[:15])       
 
 
-
+        # Filtering these bib entries by author
         m = max(similarities_by_author)  # returns all max indices
         candidates_by_author_idx = [i for i, j in enumerate(similarities_by_author) if j == m]
         candidates_by_author = [candidates_by_year[c] for c in candidates_by_author_idx]
-        for candidate in candidates_by_author:  ##
-            print(candidate['ID'])  ##
+        
+        # For DEBUG purposes:
+        print('Candidates by year and author: ')
+        for candidate in candidates_by_author:
+            print(candidate['ID'])
 
-        # match now by closest title in the bib entries
+
+        # Match now by closest title in the bib entries
         bib_titles = [bp.bracket_removal(c['title']) for c in candidates_by_author]
         similarities_by_titles = [Levenshtein.ratio(title_h, candidate['title']) for candidate in candidates_by_author]
         m = max(similarities_by_titles)
         candidates_by_titles_idx = [i for i, j in enumerate(similarities_by_titles) if j == m]
         candidates_by_titles = [candidates_by_author[c] for c in candidates_by_titles_idx]
 
+        # If there is only one candidate based on the title, author, and year, then select that one
         if len(candidates_by_titles) == 1:
             candidate_by_title = candidates_by_titles[0]
+        # In the case of multiple candidates (e.g., the same person presented the same paper twice in a year),
+        # select the one that matches the place of the presentation/publication/broadcast
         else:
             h_ref = h_span.find_previous('div', {'class': 'csl-entry'})
             reftext = h_ref.text
@@ -64,8 +74,8 @@ Example: python create_presentations.py ./presentations.html ./presentations.bib
                 if candidate['address'] in reftext:
                     candidate_by_title = candidate
 
-        work_title = candidate_by_title['title']
-        work_title = bp.bracket_removal(work_title)
+        # Title of the presentation
+        work_title = bp.bracket_removal(candidate_by_title['title'])
         #print(work_title)
 
         # Find the preceding element of the <span> element stored in h_span
@@ -76,6 +86,7 @@ Example: python create_presentations.py ./presentations.html ./presentations.bib
         selected_entry = bp.statamic_field_presentation_generator(candidate_by_title)
         today = (time.strftime("%Y-%m-%d"))
         bp.md_presentation_generator(selected_entry, work_title, output_folder, today + '-' + selected_entry['title'] + '.md')
-        print()
-        print(candidate_by_title['ID'])
+
+        # For DEBUG purposes:
+        print('\nTHE ONE:', candidate_by_title['ID'])
         print("\n\n")

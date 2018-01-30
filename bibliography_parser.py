@@ -12,23 +12,23 @@ def html_iterator(html_file):
     # The returned <span> elements contain the metadata for each reference of the html file
     return span_elements
 
-def title_extractor(title_string):
+def title_extractor(metadata_string):
     """
     Returns the title stored in <span>. The title, as well as other metadata for the reference, is part of 
-    a large string which is stored in <span>'s attribute 'title' (here stored in the parameter title_string).
+    a large string which is stored in <span>'s attribute 'title' (here stored in the parameter metadata_string).
     The title returned is in UTF-8 format. 
     """
 
-    # The title in the title_string is preceded by a substring of the form: 
+    # The title in the metadata_string is preceded by a substring of the form: 
     # 'rft.title', 'rft.atitle', or 'rft.btitle' (depending on the genre)
     # And it is followed by '&'
-    genre = re.search('rft\.genre=([a-z]*)&', title_string)
+    genre = re.search('rft\.genre=([a-z]*)&', metadata_string)
 
     if genre == None:
         # For ALL Presentations, for ALL Media, and for SOME Publications (specifically, dissertations),
         # Zotero does not assign any 'genre'.
         # In ALL these cases, the title of the presentation/broadcast/publication follows the string "rft.title="
-        title = re.search("rft\.title=([a-zA-Z0-9%()'.-]*)&rft", title_string).group(1)
+        title = re.search("rft\.title=([a-zA-Z0-9%()'.-]*)&rft", metadata_string).group(1)
         print("GENRE -> " + str(genre))
     else:
         genre_name = genre.group(1)
@@ -36,11 +36,11 @@ def title_extractor(title_string):
         if genre_name == 'proceeding' or genre_name == 'bookitem' or genre_name == 'article':
             # For genres such as proceedings, bookitems, or journal articles,
             # the title of the publications follows the string "rft.atitle"
-            title = re.search("rft\.atitle=([a-zA-Z0-9%()'.-]*)&rft", title_string).group(1)
+            title = re.search("rft\.atitle=([a-zA-Z0-9%()'.-]*)&rft", metadata_string).group(1)
         elif genre_name == 'book':
             # For the book genre, 
             # the title of the book follows the string "rft.btitle"
-            title = re.search("rft\.btitle=([a-zA-Z0-9%()'.-]*)&rft", title_string).group(1)
+            title = re.search("rft\.btitle=([a-zA-Z0-9%()'.-]*)&rft", metadata_string).group(1)
         else:
             # Future possibilities?
             title = ""
@@ -50,27 +50,27 @@ def title_extractor(title_string):
     return title
 
 
-def year_extractor(title_string):
+def year_extractor(metadata_string):
     """
     Returns the year stored in <span>. The year, as well as other metadata for the reference, is part of 
-    a large string which is stored in <span>'s attribute 'title' (here stored in the parameter title_string).
+    a large string which is stored in <span>'s attribute 'title' (here stored in the parameter metadata_string).
     """
     #The date of the reference is preceded by the substring 'rft.date=' and followed by '&'.
 
     # Assuming the year is the first thing that appears in the date (this might change in future versions?)
-    years = re.findall('rft\.date=(.{4})', title_string)
+    years = re.findall('rft\.date=(.{4})', metadata_string)
     # If there are many years, pick the last one
     year = years[-1]
     return year
 
 
-def first_author_extractor(title_string):
+def first_author_extractor(metadata_string):
     """
     Returns the first author (UTF-8) in the form: last_name, first_name
     Example: Cumming, Julie E.
     """
-    lastname = re.search("rft\.aulast=([a-zA-Z0-9%'.-]*)&", title_string).group(1)
-    firstname = re.search("rft\.aufirst=([a-zA-Z0-9%'.()-]*)&rft", title_string).group(1)
+    lastname = re.search("rft\.aulast=([a-zA-Z0-9%'.-]*)&", metadata_string).group(1)
+    firstname = re.search("rft\.aufirst=([a-zA-Z0-9%'.()-]*)&rft", metadata_string).group(1)
     main_author = lastname + ', ' + firstname
     # The name of the author is retrieved in this format to facilitate the comparison with the first author in the bib file
     # (all authors in the bib file are stored in the form "last_name, first_name", even second and third authors)
@@ -155,14 +155,29 @@ def url_link_encoder(citation_str, upload_url, title):
     """
     Insert HTML code in the citation string
     """
+    # Make the title of the citation_str link to the upload_url
+
+    # The title extracted from the metadata of each entry in the html file
+    # (this is, the string in the span element that follows 'rft.title=')
+    # corresponds to the title entered in Zotero (with the exact same capitalization).
+    
+    # The title of the citation_str (the text of each reference in the html) 
+    # has a capitalization that corresponds to a given citation style (e.g., Chicago 17)
+    
+    # To find the title in the citation_str, we need both of them to be written using the same capitalization.
+
+    # Lower case version of both the citation_str and the title
     reference_low = citation_str.lower()
     title_low = title.lower()
 
+    # Determine the indices where the title is found in the citation_str
     title_start = reference_low.find(title_low)
     title_end = title_start + len(title_low)
 
+    # Find the title in the citation_str
     ref_title = citation_str[title_start:title_end]
 
+    # Substitute the title by a linked version of itself, which links to the upload_url
     url_string = ''.join(['<a href="', upload_url, '">', ref_title, '</a>'])
     print(title in citation_str)
     citation_str = citation_str.replace(ref_title, url_string)
