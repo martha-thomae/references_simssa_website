@@ -52,7 +52,7 @@ Example: python create_media.py ./media.html ./media.bib ./outputfolder/"
         # For DEBUG purposes:
         print('Candidates by year and author: ')
         for candidate in candidates_by_author:
-            print(candidate['ID'])
+            print('\t',candidate['ID'])
 
 
         # Match now by closest title in the bib entries

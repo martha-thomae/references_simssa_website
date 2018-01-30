@@ -179,8 +179,11 @@ def url_link_encoder(citation_str, upload_url, title):
 
     # Substitute the title by a linked version of itself, which links to the upload_url
     url_string = ''.join(['<a href="', upload_url, '">', ref_title, '</a>'])
-    print(title in citation_str)
     citation_str = citation_str.replace(ref_title, url_string)
+
+    # For DEBUG purposes:
+    print('THIS TITLE NEEDS A LINK.\nDid it get one?', title_low in reference_low)
+
     return citation_str
 
 
